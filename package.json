@@ -1,0 +1,25 @@
+{
+  "name": "ai-talking-avatar",
+  "version": "1.0.0",
+  "description": "3D talking avatar with real-time lip sync using visemes",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "dev": "npx http-server -p 8000 -o",
+    "build": "echo 'No build required - static files only'"
+  },
+  "keywords": [
+    "3d",
+    "avatar",
+    "threejs",
+    "lip-sync",
+    "viseme",
+    "tts",
+    "web-speech"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

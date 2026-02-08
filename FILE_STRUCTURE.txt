@@ -1,0 +1,89 @@
+📁 AI-TALKING-AVATAR PROJECT STRUCTURE
+═══════════════════════════════════════════════════════════════
+
+talking-avatar/
+│
+├── 🎯 START_HERE.md              ← Read this first!
+│
+├── 📱 CORE APPLICATION FILES (Required)
+│   ├── index.html                Main app with UI (9.7 KB)
+│   ├── avatar.js                 Animation engine (19 KB)
+│   └── facecap.glb               3D model (326 KB)
+│
+├── 📖 DOCUMENTATION
+│   ├── README.md                 Main documentation (7.0 KB)
+│
+├── 🚀 DEPLOYMENT TOOLS
+│   ├── start.bat                 Windows startup script
+│   ├── package.json              npm configuration
+│
+└── 📊 PROJECT INFO
+    └── FILE_STRUCTURE.txt        This file
+
+═══════════════════════════════════════════════════════════════
+
+QUICK START GUIDE
+═══════════════════════════════════════════════════════════════
+
+LOCAL TESTING (30 seconds):
+───────────────────────────────────────────────────────────────
+  Windows:   Double-click start.bat
+  Manual:    python -m http.server 8000
+  
+  Then open: http://localhost:8000
+
+
+CUSTOMIZATION:
+───────────────────────────────────────────────────────────────
+  See FEATURES.md for complete customization guide
+  See DEPLOYMENT.md for all deployment options
+
+═══════════════════════════════════════════════════════════════
+
+FILE PURPOSES
+═══════════════════════════════════════════════════════════════
+
+index.html
+  • Beautiful UI with gradient backgrounds
+  • Text input and control buttons
+  • Responsive grid layout
+  • Status indicator
+  • Voice selection dropdown
+
+avatar.js
+  • Three.js 3D rendering engine
+  • Viseme-based lip sync system (40+ phonemes)
+  • Natural idle animations (breathing, blinking)
+  • Expressive speaking animations
+  • Post-speech smile
+  • Web Speech API integration
+
+facecap.glb
+  • 3D face model with 52 morph targets
+  • ARKit-compatible topology
+  • KTX2 texture compression
+  • Optimized for web performance
+
+README.md
+  • Feature overview
+  • Quick start instructions
+  • Deployment options
+  • Customization tips
+  • Troubleshooting guide
+
+═══════════════════════════════════════════════════════════════
+
+MINIMUM FILES FOR DEPLOYMENT
+═══════════════════════════════════════════════════════════════
+
+  ✓ index.html      (Required)
+  ✓ avatar.js       (Required)
+  ✓ facecap.glb     (Required)
+
+  Everything else is documentation and helper scripts!
+
+═══════════════════════════════════════════════════════════════
+  
+  Ultra-lightweight and optimized for web! 🚀
+
+═══════════════════════════════════════════════════════════════
