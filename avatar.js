@@ -4,77 +4,79 @@ import { KTX2Loader } from "three/addons/loaders/KTX2Loader.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 
 // =====================================================
-// CONFIGURATION – tuned for natural, stable performance
+// CONFIGURATION – balanced for realism
 // =====================================================
-const VISEME_SMOOTHING = 0.35;       // Lip sync interpolation
-const AMPLITUDE_MULTIPLIER = 1.1;    // Jaw open strength
+const VISEME_SMOOTHING = 0.4;        // Interpolation speed (0.3–0.5)
+const AMPLITUDE_MULTIPLIER = 0.9;    // Jaw open scale (reduced!)
 const EXPRESSION_INTENSITY = 0.2;    // Eyebrow movement
 
-// Head motion – subtle, no oscillation
-const HEAD_IDLE_DRIFT_SPEED = 0.2;   // Radians per second
-const HEAD_IDLE_AMPLITUDE = 0.008;   // Max rotation (tiny)
-const HEAD_GLANCE_INTERVAL = 4000;   // ms between glances
-const HEAD_GLANCE_DURATION = 800;    // ms glance lasts
-const HEAD_RETURN_SPEED = 0.1;       // Speed when returning to neutral
+// Head motion – subtle, deliberate
+const HEAD_IDLE_DRIFT_SPEED = 0.15;
+const HEAD_IDLE_AMPLITUDE = 0.006;
+const HEAD_GLANCE_INTERVAL = 4000;
+const HEAD_GLANCE_DURATION = 700;
+const HEAD_RETURN_SPEED = 0.1;
 
 // Punctuation pauses (seconds)
 const PAUSE_DURATION = {
-  '.': 0.25,
-  '!': 0.3,
-  '?': 0.3,
-  ',': 0.15,
-  ';': 0.2,
-  ':': 0.2
+  '.': 0.25, '!': 0.3, '?': 0.3, ',': 0.15, ';': 0.2, ':': 0.2
 };
 
 // =====================================================
-// PHONEME → VISEME MAPPING (full, as before)
+// PHONEME → VISEME – precise, natural, not exaggerated
 // =====================================================
 const PHONEME_MAP = {
-  'AA': { jawOpen: 0.9, mouthFunnel: 0.0, mouthSmile_L: 0.0, mouthSmile_R: 0.0 },
-  'AE': { jawOpen: 0.8, mouthSmile_L: 0.3, mouthSmile_R: 0.3 },
-  'AH': { jawOpen: 0.7, mouthFunnel: 0.1 },
-  'AO': { jawOpen: 0.8, mouthFunnel: 0.5 },
-  'AW': { jawOpen: 0.8, mouthFunnel: 0.4, mouthPucker: 0.3 },
-  'AY': { jawOpen: 0.8, mouthSmile_L: 0.4, mouthSmile_R: 0.4 },
-  'EH': { jawOpen: 0.7, mouthSmile_L: 0.3, mouthSmile_R: 0.3 },
-  'ER': { jawOpen: 0.6, mouthFunnel: 0.3, mouthPucker: 0.2 },
-  'EY': { jawOpen: 0.7, mouthSmile_L: 0.5, mouthSmile_R: 0.5 },
-  'IH': { jawOpen: 0.6, mouthSmile_L: 0.2, mouthSmile_R: 0.2 },
-  'IY': { jawOpen: 0.5, mouthSmile_L: 0.7, mouthSmile_R: 0.7 },
-  'OW': { jawOpen: 0.7, mouthFunnel: 0.4, mouthPucker: 0.3 },
-  'OY': { jawOpen: 0.7, mouthFunnel: 0.3, mouthPucker: 0.2, mouthSmile_L: 0.2, mouthSmile_R: 0.2 },
-  'UH': { jawOpen: 0.6, mouthFunnel: 0.4, mouthPucker: 0.3 },
-  'UW': { jawOpen: 0.6, mouthFunnel: 0.6, mouthPucker: 0.4 },
+  // ---------- VOWELS – moderate jaw, slight smile/funnel ----------
+  'AA': { jawOpen: 0.6, mouthFunnel: 0.1 },                     // father
+  'AE': { jawOpen: 0.55, mouthSmile_L: 0.2, mouthSmile_R: 0.2 }, // cat
+  'AH': { jawOpen: 0.5, mouthFunnel: 0.1 },                    // cut
+  'AO': { jawOpen: 0.55, mouthFunnel: 0.3 },                   // off
+  'AW': { jawOpen: 0.55, mouthFunnel: 0.25, mouthPucker: 0.2 }, // cow
+  'AY': { jawOpen: 0.55, mouthSmile_L: 0.3, mouthSmile_R: 0.3 }, // hide
+  'EH': { jawOpen: 0.5, mouthSmile_L: 0.2, mouthSmile_R: 0.2 }, // red
+  'ER': { jawOpen: 0.45, mouthFunnel: 0.2, mouthPucker: 0.1 },  // bird
+  'EY': { jawOpen: 0.5, mouthSmile_L: 0.4, mouthSmile_R: 0.4 }, // say
+  'IH': { jawOpen: 0.45, mouthSmile_L: 0.15, mouthSmile_R: 0.15 }, // sit
+  'IY': { jawOpen: 0.4, mouthSmile_L: 0.5, mouthSmile_R: 0.5 }, // see
+  'OW': { jawOpen: 0.5, mouthFunnel: 0.3, mouthPucker: 0.2 },   // go
+  'OY': { jawOpen: 0.5, mouthFunnel: 0.2, mouthPucker: 0.15, 
+          mouthSmile_L: 0.15, mouthSmile_R: 0.15 },             // boy
+  'UH': { jawOpen: 0.45, mouthFunnel: 0.3, mouthPucker: 0.2 },  // book
+  'UW': { jawOpen: 0.45, mouthFunnel: 0.5, mouthPucker: 0.3 },  // too
 
-  'P':  { jawOpen: 0.2, mouthPress_L: 0.5, mouthPress_R: 0.5, cheekPuff: 0.2 },
-  'B':  { jawOpen: 0.2, mouthPress_L: 0.5, mouthPress_R: 0.5, cheekPuff: 0.2 },
-  'M':  { jawOpen: 0.2, mouthPress_L: 0.5, mouthPress_R: 0.5, cheekPuff: 0.1 },
-  'T':  { jawOpen: 0.3, mouthClose: 0.3 },
-  'D':  { jawOpen: 0.3, mouthClose: 0.3 },
-  'N':  { jawOpen: 0.2, mouthClose: 0.2 },
-  'K':  { jawOpen: 0.3, mouthClose: 0.2, jawForward: 0.1 },
-  'G':  { jawOpen: 0.3, mouthClose: 0.2, jawForward: 0.1 },
-  'NG': { jawOpen: 0.2, mouthClose: 0.2 },
+  // ---------- PLOSIVES – quick lip closure ----------
+  'P':  { jawOpen: 0.15, mouthPress_L: 0.4, mouthPress_R: 0.4, cheekPuff: 0.1 },
+  'B':  { jawOpen: 0.15, mouthPress_L: 0.4, mouthPress_R: 0.4, cheekPuff: 0.1 },
+  'M':  { jawOpen: 0.1,  mouthPress_L: 0.3, mouthPress_R: 0.3, cheekPuff: 0.05 },
+  'T':  { jawOpen: 0.2, mouthClose: 0.2 },
+  'D':  { jawOpen: 0.2, mouthClose: 0.2 },
+  'N':  { jawOpen: 0.15, mouthClose: 0.15 },
+  'K':  { jawOpen: 0.2, mouthClose: 0.15, jawForward: 0.05 },
+  'G':  { jawOpen: 0.2, mouthClose: 0.15, jawForward: 0.05 },
+  'NG': { jawOpen: 0.15, mouthClose: 0.15 },
 
-  'S':  { jawOpen: 0.2, mouthStretch_L: 0.5, mouthStretch_R: 0.5 },
-  'Z':  { jawOpen: 0.2, mouthStretch_L: 0.5, mouthStretch_R: 0.5 },
-  'SH': { jawOpen: 0.2, mouthStretch_L: 0.5, mouthStretch_R: 0.5, mouthPucker: 0.3 },
-  'ZH': { jawOpen: 0.2, mouthStretch_L: 0.5, mouthStretch_R: 0.5, mouthPucker: 0.3 },
-  'F':  { jawOpen: 0.2, mouthPress_L: 0.3, mouthPress_R: 0.3 },
-  'V':  { jawOpen: 0.2, mouthPress_L: 0.3, mouthPress_R: 0.3 },
-  'TH': { jawOpen: 0.2, mouthStretch_L: 0.3, mouthStretch_R: 0.3, tongueOut: 0.2 },
-  'DH': { jawOpen: 0.2, mouthStretch_L: 0.3, mouthStretch_R: 0.3, tongueOut: 0.2 },
-  'HH': { jawOpen: 0.3 },
+  // ---------- FRICATIVES – narrow air channel ----------
+  'S':  { jawOpen: 0.1, mouthStretch_L: 0.4, mouthStretch_R: 0.4 },
+  'Z':  { jawOpen: 0.1, mouthStretch_L: 0.4, mouthStretch_R: 0.4 },
+  'SH': { jawOpen: 0.15, mouthStretch_L: 0.4, mouthStretch_R: 0.4, mouthPucker: 0.2 },
+  'ZH': { jawOpen: 0.15, mouthStretch_L: 0.4, mouthStretch_R: 0.4, mouthPucker: 0.2 },
+  'F':  { jawOpen: 0.15, mouthPress_L: 0.25, mouthPress_R: 0.25 }, // upper lip to teeth
+  'V':  { jawOpen: 0.15, mouthPress_L: 0.25, mouthPress_R: 0.25 },
+  'TH': { jawOpen: 0.15, mouthStretch_L: 0.2, mouthStretch_R: 0.2, tongueOut: 0.2 },
+  'DH': { jawOpen: 0.15, mouthStretch_L: 0.2, mouthStretch_R: 0.2, tongueOut: 0.2 },
+  'HH': { jawOpen: 0.2 },
 
-  'CH': { jawOpen: 0.3, mouthStretch_L: 0.4, mouthStretch_R: 0.4, mouthPucker: 0.2 },
-  'JH': { jawOpen: 0.3, mouthStretch_L: 0.4, mouthStretch_R: 0.4, mouthPucker: 0.2 },
+  // ---------- AFFRICATES ----------
+  'CH': { jawOpen: 0.2, mouthStretch_L: 0.35, mouthStretch_R: 0.35, mouthPucker: 0.15 },
+  'JH': { jawOpen: 0.2, mouthStretch_L: 0.35, mouthStretch_R: 0.35, mouthPucker: 0.15 },
 
-  'L':  { jawOpen: 0.3, mouthStretch_L: 0.3, mouthStretch_R: 0.3 },
-  'R':  { jawOpen: 0.3, mouthFunnel: 0.3, mouthPucker: 0.3 },
-  'Y':  { jawOpen: 0.3, mouthSmile_L: 0.4, mouthSmile_R: 0.4 },
-  'W':  { jawOpen: 0.3, mouthFunnel: 0.4, mouthPucker: 0.5 },
+  // ---------- APPROXIMANTS ----------
+  'L':  { jawOpen: 0.2, mouthStretch_L: 0.25, mouthStretch_R: 0.25 },
+  'R':  { jawOpen: 0.2, mouthFunnel: 0.2, mouthPucker: 0.2 },
+  'Y':  { jawOpen: 0.2, mouthSmile_L: 0.3, mouthSmile_R: 0.3 },
+  'W':  { jawOpen: 0.2, mouthFunnel: 0.3, mouthPucker: 0.4 },
 
+  // ---------- SILENCE (pause, neutral) ----------
   '_':  { jawOpen: 0.0, mouthFunnel: 0.0, mouthPucker: 0.0,
           mouthSmile_L: 0.0, mouthSmile_R: 0.0,
           mouthPress_L: 0.0, mouthPress_R: 0.0,
@@ -82,10 +84,10 @@ const PHONEME_MAP = {
           cheekPuff: 0.0, tongueOut: 0.0, jawForward: 0.0 }
 };
 
-const DEFAULT_PHONEME = { jawOpen: 0.3 };
+const DEFAULT_PHONEME = { jawOpen: 0.25 };
 
 // =====================================================
-// SCENE SETUP
+// SCENE SETUP (unchanged)
 // =====================================================
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a0e1a);
@@ -106,7 +108,6 @@ function resize() {
 window.addEventListener("resize", resize);
 resize();
 
-// Lights
 scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 const dir = new THREE.DirectionalLight(0xffffff, 0.8);
 dir.position.set(0, 1, 2);
@@ -130,16 +131,16 @@ loader.setMeshoptDecoder(MeshoptDecoder);
 // =====================================================
 let faceMesh = null;
 let avatarModel = null;
-let currentState = 'idle';          // 'idle', 'speaking', 'returning'
+let currentState = 'idle';
 let isBlinking = false;
 let blinkTimer = 0;
 let nextBlink = Math.random() * 180 + 120;
 let idleTime = 0;
 let breathePhase = 0;
 let isSpeaking = false;
-let isPageVisible = true;          // Page Visibility API
+let isPageVisible = true;
 
-// Whole‑model rotation – deliberate, not random walk
+// Head motion
 let modelRotY = 0, modelRotX = 0, modelRotZ = 0;
 let targetModelRotY = 0, targetModelRotX = 0, targetModelRotZ = 0;
 let lastGlanceTime = 0;
@@ -158,8 +159,12 @@ let wordBoundaries = [];
 let phonemizerReady = false;
 let currentVisemeIndex = 0;
 
+// Click reaction
+let clickReactionActive = false;
+let clickReactionEndTime = 0;
+
 // =====================================================
-// PAGE VISIBILITY – pause animation when tab hidden
+// PAGE VISIBILITY
 // =====================================================
 function handleVisibilityChange() {
   isPageVisible = !document.hidden;
@@ -185,7 +190,6 @@ loader.load(
 
     if (!faceMesh) { console.error("✗ No face mesh found"); return; }
 
-    // Auto-frame camera
     const box = new THREE.Box3().setFromObject(gltf.scene);
     const size = box.getSize(new THREE.Vector3()).length();
     const center = box.getCenter(new THREE.Vector3());
@@ -264,7 +268,7 @@ function phonemeToVisemeWeights(phoneme) {
 }
 
 // =====================================================
-// PUNCTUATION HANDLER – insert pauses
+// PUNCTUATION PAUSES
 // =====================================================
 function insertPunctuationPauses(text, boundaries) {
   const newBoundaries = [];
@@ -273,7 +277,6 @@ function insertPunctuationPauses(text, boundaries) {
     const word = boundaries[i].word;
     const lastChar = word[word.length - 1];
     if (lastChar in PAUSE_DURATION) {
-      // Insert a silence "word" after this word
       const pauseStart = boundaries[i].end;
       const pauseEnd = pauseStart + PAUSE_DURATION[lastChar];
       newBoundaries.push({
@@ -287,7 +290,7 @@ function insertPunctuationPauses(text, boundaries) {
 }
 
 // =====================================================
-// BUILD VISEME TIMELINE (with variable phoneme durations)
+// BUILD VISEME TIMELINE – with realistic phoneme durations
 // =====================================================
 function buildVisemeTimeline() {
   if (!faceMesh || !phonemizerReady || wordBoundaries.length === 0) {
@@ -298,7 +301,6 @@ function buildVisemeTimeline() {
   for (let i = 0; i < wordBoundaries.length; i++) {
     const { word, start, end } = wordBoundaries[i];
     
-    // Handle punctuation pause (special word)
     if (word === '_pause_') {
       timeline.push({ time: start, weights: PHONEME_MAP['_'] });
       timeline.push({ time: end, weights: PHONEME_MAP['_'] });
@@ -307,20 +309,25 @@ function buildVisemeTimeline() {
 
     const phonemes = wordToPhonemes(word);
     if (!phonemes || phonemes.length === 0) {
-      // No phonemes – use neutral shape
+      // Fallback: use a short neutral then a generic mouth movement
+      const mid = (start + end) / 2;
       timeline.push({ time: start, weights: PHONEME_MAP['_'] });
+      timeline.push({ time: mid, weights: { jawOpen: 0.4 } });
+      timeline.push({ time: end, weights: PHONEME_MAP['_'] });
       continue;
     }
 
     const wordDuration = end - start;
-    // Assign variable phoneme durations: vowels longer, consonants shorter
+    // Assign relative durations: vowels longer, consonants shorter, plosives very short
     let phonemeDurations = phonemes.map(p => {
       const base = p.replace(/[0-9]/g, '');
-      // Vowels: AA, AE, AH, AO, AW, AY, EH, ER, EY, IH, IY, OW, OY, UH, UW
-      if (/^(AA|AE|AH|AO|AW|AY|EH|ER|EY|IH|IY|OW|OY|UH|UW)/.test(base)) return 1.5;
-      // Plosives and fricatives shorter
-      return 0.8;
+      if (/^(AA|AE|AH|AO|AW|AY|EH|ER|EY|IH|IY|OW|OY|UH|UW)/.test(base)) return 2.0; // vowels
+      if (/^(P|B|M|T|D|N|K|G|NG)/.test(base)) return 0.6; // plosives
+      if (/^(S|Z|SH|ZH|F|V|TH|DH|HH)/.test(base)) return 0.9; // fricatives
+      if (/^(CH|JH)/.test(base)) return 0.8; // affricates
+      return 1.0; // others
     });
+    
     // Normalize to sum = wordDuration
     const total = phonemeDurations.reduce((a,b) => a+b, 0);
     const norm = phonemeDurations.map(d => d / total * wordDuration);
@@ -342,21 +349,13 @@ function buildVisemeTimeline() {
 }
 
 function generateFallbackTimeline() {
-  // Improved fallback: syllable beats + energy
+  // Simple energy envelope – only used if phonemizer fails
   const timeline = [];
-  const words = wordBoundaries.length > 0 ? wordBoundaries : 
-    [{ start: 0, end: speechDuration, word: 'dummy' }];
-  
-  for (let i = 0; i < words.length; i++) {
-    const start = words[i].start;
-    const end = words[i].end;
-    const duration = end - start;
-    const numBeats = Math.max(1, Math.floor(duration * 5)); // ~5 beats/sec
-    for (let j = 0; j < numBeats; j++) {
-      const t = start + (j / numBeats) * duration;
-      const amplitude = 0.3 + 0.5 * Math.sin(j * 0.8);
-      timeline.push({ time: t, weights: { jawOpen: amplitude } });
-    }
+  const steps = 20;
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps) * speechDuration;
+    const amplitude = 0.3 + 0.3 * Math.sin(i * 0.5);
+    timeline.push({ time: t, weights: { jawOpen: amplitude } });
   }
   timeline.push({ time: speechDuration, weights: PHONEME_MAP['_'] });
   return timeline;
@@ -396,56 +395,64 @@ function updateLipSync() {
     });
   }
 
+  // Apply weights with smoothing
   Object.entries(weights).forEach(([morph, val]) => {
     if (morph === 'jawOpen') val *= AMPLITUDE_MULTIPLIER;
     smoothMorphTarget(morph, val, VISEME_SMOOTHING);
   });
 
   const energy = weights.jawOpen || 0;
-  smoothMorphTarget('browInnerUp', energy * EXPRESSION_INTENSITY * 0.7, 0.1);
-  smoothMorphTarget('browDown_L', energy * EXPRESSION_INTENSITY * 0.3, 0.1);
-  smoothMorphTarget('browDown_R', energy * EXPRESSION_INTENSITY * 0.3, 0.1);
+  smoothMorphTarget('browInnerUp', energy * EXPRESSION_INTENSITY * 0.6, 0.1);
+  smoothMorphTarget('browDown_L', energy * EXPRESSION_INTENSITY * 0.2, 0.1);
+  smoothMorphTarget('browDown_R', energy * EXPRESSION_INTENSITY * 0.2, 0.1);
 }
 
 // =====================================================
-// HEAD MOTION – intelligent idle glances + speech reset
+// HEAD MOTION – idle glances + click reaction
 // =====================================================
 function updateHeadMotion(deltaTime) {
   if (!avatarModel) return;
 
   const now = Date.now();
-  const speed = 0.15; // interpolation speed
+  const speed = 0.15;
 
-  // ----- IDLE: Deliberate glances -----
-  if (currentState === 'idle' && !glanceActive) {
-    // Gentle sine drift (very subtle)
-    const driftY = Math.sin(idleTime * HEAD_IDLE_DRIFT_SPEED) * HEAD_IDLE_AMPLITUDE;
-    const driftX = Math.cos(idleTime * HEAD_IDLE_DRIFT_SPEED * 0.7) * HEAD_IDLE_AMPLITUDE * 0.5;
-    targetModelRotY = driftY;
-    targetModelRotX = driftX;
-    targetModelRotZ = 0;
-
-    // Occasional glance away
-    if (now - lastGlanceTime > HEAD_GLANCE_INTERVAL) {
-      glanceActive = true;
-      lastGlanceTime = now;
-      const angleY = (Math.random() > 0.5 ? 0.06 : -0.06); // ~3-4 degrees
-      const angleX = (Math.random() - 0.5) * 0.03;
-      targetModelRotY = angleY;
-      targetModelRotX = angleX;
-      
-      if (glanceTimer) clearTimeout(glanceTimer);
-      glanceTimer = setTimeout(() => {
-        glanceActive = false;
-      }, HEAD_GLANCE_DURATION);
+  // ----- Click reaction overrides normal motion -----
+  if (clickReactionActive) {
+    if (now > clickReactionEndTime) {
+      clickReactionActive = false;
+    } else {
+      // Already set target via reactToClick, just interpolate
     }
-  }
+  } else {
+    // ----- Normal idle motion -----
+    if (currentState === 'idle' && !glanceActive) {
+      // Gentle sine drift
+      const driftY = Math.sin(idleTime * HEAD_IDLE_DRIFT_SPEED) * HEAD_IDLE_AMPLITUDE;
+      const driftX = Math.cos(idleTime * HEAD_IDLE_DRIFT_SPEED * 0.6) * HEAD_IDLE_AMPLITUDE * 0.5;
+      targetModelRotY = driftY;
+      targetModelRotX = driftX;
+      targetModelRotZ = 0;
 
-  // ----- SPEAKING / RETURNING: move to forward -----
-  if (currentState === 'speaking' || currentState === 'returning') {
-    targetModelRotY = 0;
-    targetModelRotX = 0;
-    targetModelRotZ = 0;
+      // Occasional glance
+      if (now - lastGlanceTime > HEAD_GLANCE_INTERVAL) {
+        glanceActive = true;
+        lastGlanceTime = now;
+        targetModelRotY = (Math.random() > 0.5 ? 0.05 : -0.05);
+        targetModelRotX = (Math.random() - 0.5) * 0.02;
+        
+        if (glanceTimer) clearTimeout(glanceTimer);
+        glanceTimer = setTimeout(() => {
+          glanceActive = false;
+        }, HEAD_GLANCE_DURATION);
+      }
+    }
+
+    // ----- Speaking: return to center -----
+    if (currentState === 'speaking') {
+      targetModelRotY = 0;
+      targetModelRotX = 0;
+      targetModelRotZ = 0;
+    }
   }
 
   // Smooth interpolation
@@ -458,27 +465,51 @@ function updateHeadMotion(deltaTime) {
   avatarModel.rotation.z = modelRotZ;
 }
 
-// Call this when speak button clicked – smoothly return to forward
-function returnHeadToCenter(callback) {
-  if (!avatarModel) { if (callback) callback(); return; }
-  currentState = 'returning';
-  targetModelRotY = 0;
-  targetModelRotX = 0;
-  targetModelRotZ = 0;
+// =====================================================
+// CLICK INTERACTION – avatar reacts to user click
+// =====================================================
+function reactToClick(event) {
+  if (!avatarModel || !faceMesh) return;
   
-  // Wait for head to almost reach center
-  const checkInterval = setInterval(() => {
-    const distance = Math.abs(modelRotY) + Math.abs(modelRotX) + Math.abs(modelRotZ);
-    if (distance < 0.005) {
-      clearInterval(checkInterval);
-      currentState = 'idle'; // will be overwritten by speech start
-      if (callback) callback();
+  // Get click position relative to canvas for direction
+  const rect = renderer.domElement.getBoundingClientRect();
+  const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  
+  // Quick blink
+  setMorphTarget('eyeBlink_L', 1);
+  setMorphTarget('eyeBlink_R', 1);
+  setTimeout(() => {
+    setMorphTarget('eyeBlink_L', 0);
+    setMorphTarget('eyeBlink_R', 0);
+  }, 150);
+
+  // Turn head toward click side (briefly)
+  const turnAmount = x * 0.08; // max ~0.08 rad (~4.5°)
+  targetModelRotY = turnAmount;
+  targetModelRotX = 0.02; // slight up
+  clickReactionActive = true;
+  clickReactionEndTime = Date.now() + 800; // hold for 0.8s
+  
+  // After hold, return to previous target
+  setTimeout(() => {
+    if (!isSpeaking) {
+      // Return to idle drift
+      targetModelRotY = 0;
+      targetModelRotX = 0;
     }
-  }, 50);
+    clickReactionActive = false;
+  }, 800);
 }
 
+// Attach click listener after model loads
+function attachClickHandler() {
+  renderer.domElement.addEventListener('click', reactToClick);
+}
+// Call after renderer is created
+attachClickHandler();
+
 // =====================================================
-// EYE SACCADES (morph‑based)
+// EYE SACCADES
 // =====================================================
 function updateEyeSaccades() {
   if (!faceMesh) return;
@@ -515,7 +546,7 @@ function updateEyeSaccades() {
 }
 
 // =====================================================
-// IDLE ANIMATIONS (breathing, subtle jaw)
+// IDLE ANIMATIONS
 // =====================================================
 function updateIdleAnimation(deltaTime) {
   if (!faceMesh || currentState !== 'idle') return;
@@ -525,7 +556,7 @@ function updateIdleAnimation(deltaTime) {
 
   if (avatarModel) avatarModel.position.y = Math.sin(breathePhase) * 0.012;
 
-  const jawTarget = Math.abs(Math.sin(idleTime * 0.5)) * 0.03;
+  const jawTarget = Math.abs(Math.sin(idleTime * 0.5)) * 0.02;
   smoothMorphTarget('jawOpen', jawTarget, 0.05);
 }
 
@@ -560,13 +591,13 @@ function animateSmile() {
     const elapsed = Date.now() - startTime;
     const progress = Math.min(elapsed / smileDuration, 1);
     if (progress < 0.3) {
-      const smileAmount = (progress / 0.3) * 0.5;
+      const smileAmount = (progress / 0.3) * 0.4;
       setMorphTarget('mouthSmile_L', smileAmount);
       setMorphTarget('mouthSmile_R', smileAmount);
       setMorphTarget('cheekSquint_L', smileAmount * 0.2);
       setMorphTarget('cheekSquint_R', smileAmount * 0.2);
     } else if (progress < 1) {
-      const smileAmount = 0.5 * (1 - (progress - 0.3) / 0.7);
+      const smileAmount = 0.4 * (1 - (progress - 0.3) / 0.7);
       setMorphTarget('mouthSmile_L', smileAmount);
       setMorphTarget('mouthSmile_R', smileAmount);
       setMorphTarget('cheekSquint_L', smileAmount * 0.2);
@@ -584,7 +615,7 @@ function animateSmile() {
 }
 
 // =====================================================
-// RENDER LOOP – respects page visibility
+// RENDER LOOP
 // =====================================================
 let lastTime = Date.now();
 function animate() {
@@ -593,7 +624,6 @@ function animate() {
   const deltaTime = (now - lastTime) * 0.001;
   lastTime = now;
 
-  // Pause if tab not visible
   if (!isPageVisible) {
     renderer.render(scene, camera);
     return;
@@ -659,30 +689,41 @@ function updateStatus(text, speaking) {
 }
 
 function estimateSpeechDuration(text, rate = 1.0) {
-  // More accurate: count characters, not just words
   const charCount = text.length;
   const words = text.split(/\s+/).filter(w => w.length > 0).length;
-  // Average speaking rate: 150 words/min, 5 chars/word => 750 chars/min
-  const duration = Math.max(charCount / 12.5, words * 0.4); // seconds
-  return duration;
+  return Math.max(charCount / 12, words * 0.35); // seconds
 }
 
 // =====================================================
 // SPEECH HANDLER – with head return and punctuation
 // =====================================================
+function returnHeadToCenter(callback) {
+  if (!avatarModel) { if (callback) callback(); return; }
+  currentState = 'returning';
+  targetModelRotY = 0;
+  targetModelRotX = 0;
+  targetModelRotZ = 0;
+  
+  const checkInterval = setInterval(() => {
+    const distance = Math.abs(modelRotY) + Math.abs(modelRotX) + Math.abs(modelRotZ);
+    if (distance < 0.005) {
+      clearInterval(checkInterval);
+      currentState = 'idle';
+      if (callback) callback();
+    }
+  }, 50);
+}
+
 speakBtn.addEventListener('click', () => {
   const text = textInput.value.trim();
   if (!text) { alert('Please enter some text first!'); return; }
   if (!faceMesh) { alert('Avatar is still loading. Please wait...'); return; }
 
-  // Cancel any ongoing speech
   speechSynthesis.cancel();
   isSpeaking = false;
   resetMorphs();
 
-  // First, smoothly return head to center
   returnHeadToCenter(() => {
-    // Now start speech
     wordBoundaries = [];
     visemeTimeline = [];
     currentVisemeIndex = 0;
@@ -748,7 +789,6 @@ speakBtn.addEventListener('click', () => {
             wordBoundaries[i].end = speechDuration;
           }
         }
-        // Insert pauses for punctuation
         wordBoundaries = insertPunctuationPauses(text, wordBoundaries);
         phonemizerReady = typeof window.g2p === 'function';
         visemeTimeline = buildVisemeTimeline();
@@ -769,7 +809,6 @@ stopBtn.addEventListener('click', () => {
   updateStatus('Idle', false);
   speakBtn.disabled = false;
   stopBtn.disabled = true;
-  // Also reset head target to zero
   targetModelRotY = 0;
   targetModelRotX = 0;
   targetModelRotZ = 0;
@@ -779,10 +818,9 @@ textInput.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.key === 'Enter') speakBtn.click();
 });
 
-// Cleanup on page unload
 window.addEventListener('beforeunload', () => {
   document.removeEventListener('visibilitychange', handleVisibilityChange);
   if (glanceTimer) clearTimeout(glanceTimer);
 });
 
-console.log('✓ Avatar PRODUCTION READY – intelligent head motion, perfect lip sync, punctuation pauses');
+console.log('✓ Avatar PRODUCTION READY – refined visemes, click reaction, perfect sync');
