@@ -53,6 +53,9 @@ LOCAL TESTING :
   Then open: http://localhost:8000
 ```
 
+https://ss-2005.github.io/3D-AI-Avatar-System/
+
+
 
 ═══════════════════════════════════════════════════════════════
 
