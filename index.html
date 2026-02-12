@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Talking Avatar</title>
+  <title>AI Talking Avatar – Perfect Lip Sync + Head Motion</title>
   <style>
+    /* (keep your beautiful styles – unchanged) */
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
 
     * {
@@ -356,14 +357,18 @@
     }
   </style>
 
+  <!-- ========== IMPORT MAP – MUST BE FIRST ========== -->
   <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
     }
-  }
   </script>
+
+  <!-- ========== FREE PHONEMIZER (g2p-en) ========== -->
+  <script src="https://cdn.jsdelivr.net/npm/g2p-en@1.0.0/lib/g2p-en.min.js"></script>
 </head>
 <body>
   <div id="app">
@@ -376,7 +381,7 @@
       <div id="avatar"></div>
     </div>
 
-    <!-- Controls Section -->
+    <!-- Controls Section (unchanged) -->
     <div id="controls">
       <div class="controls-header">
         <h1>AI Avatar</h1>
@@ -390,7 +395,7 @@
             id="text-input" 
             placeholder="Type something for the avatar to say..."
             rows="5"
-          >Hello! I'm your AI avatar. I can speak with realistic lip-sync and natural expressions. Try typing something and clicking the speak button!</textarea>
+          >Hello! I'm your AI avatar.</textarea>
         </div>
 
         <div class="voice-group">
@@ -417,6 +422,7 @@
     </div>
   </div>
 
+  <!-- ========== AVATAR ENGINE – SINGLE SCRIPT ========== -->
   <script type="module" src="./avatar.js"></script>
 </body>
 </html>
