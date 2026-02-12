@@ -143,7 +143,6 @@ let speechStartTime = 0;
 let speechDuration = 0;
 
 function estimateSpeechDuration(text, rate = 1.0) {
-  // Average speaking rate: 150 words per minute
   const wordsPerMinute = 150 / rate;
   const words = text.split(/\s+/).filter(w => w.length > 0).length;
   const durationSeconds = (words / wordsPerMinute) * 60;
@@ -178,48 +177,37 @@ function startLipSync(text) {
       return;
     }
 
-    // Create varied mouth movements based on time
     const timePhase = progress * Math.PI * 8; // Multiple cycles
     const amplitude = Math.sin(progress * Math.PI); // Envelope: starts/ends quiet
-    
-    // Randomly vary between different phoneme types
     const rand = Math.random();
-    const noise = Math.sin(Date.now() * 0.01) * 0.5 + 0.5; // 0-1 noise
-    
-    // Base jaw opening (always some movement when speaking)
+    const noise = Math.sin(Date.now() * 0.01) * 0.5 + 0.5;
+
     const baseJaw = (0.3 + Math.sin(timePhase) * 0.2) * amplitude * AMPLITUDE_MULTIPLIER;
     smoothMorphTarget('jawOpen', baseJaw, VISEME_SMOOTHING);
 
-    // Vary mouth shapes
     if (rand < 0.3) {
-      // Wide vowels (a, e)
       smoothMorphTarget('mouthSmile_L', 0.3 * amplitude, VISEME_SMOOTHING);
       smoothMorphTarget('mouthSmile_R', 0.3 * amplitude, VISEME_SMOOTHING);
       smoothMorphTarget('mouthFunnel', 0, VISEME_SMOOTHING);
       smoothMorphTarget('mouthPucker', 0, VISEME_SMOOTHING);
     } else if (rand < 0.6) {
-      // Rounded vowels (o, u)
       smoothMorphTarget('mouthFunnel', 0.4 * amplitude, VISEME_SMOOTHING);
       smoothMorphTarget('mouthPucker', 0.3 * amplitude, VISEME_SMOOTHING);
       smoothMorphTarget('mouthSmile_L', 0, VISEME_SMOOTHING);
       smoothMorphTarget('mouthSmile_R', 0, VISEME_SMOOTHING);
     } else if (rand < 0.8) {
-      // Consonants (m, b, p) - lips together briefly
       smoothMorphTarget('mouthClose', noise * 0.3 * amplitude, VISEME_SMOOTHING);
       smoothMorphTarget('mouthPress_L', noise * 0.2 * amplitude, VISEME_SMOOTHING);
       smoothMorphTarget('mouthPress_R', noise * 0.2 * amplitude, VISEME_SMOOTHING);
     } else {
-      // Sibilants (s, sh, f)
       smoothMorphTarget('mouthStretch_L', 0.3 * amplitude, VISEME_SMOOTHING);
       smoothMorphTarget('mouthStretch_R', 0.3 * amplitude, VISEME_SMOOTHING);
-      smoothMorphTarget('jawOpen', baseJaw * 0.5, VISEME_SMOOTHING); // Less jaw
+      smoothMorphTarget('jawOpen', baseJaw * 0.5, VISEME_SMOOTHING);
     }
 
-    // Expressive eyebrows
     const browMove = Math.sin(timePhase * 0.5) * EXPRESSION_INTENSITY * amplitude;
     smoothMorphTarget('browInnerUp', Math.abs(browMove), 0.1);
 
-    // Occasional head movement
     if (faceMesh && Math.random() > 0.95) {
       faceMesh.rotation.y = (Math.random() - 0.5) * 0.008;
     }
@@ -250,20 +238,17 @@ function updateIdleAnimation(deltaTime) {
   idleTime += deltaTime;
   breathePhase += deltaTime * 0.8;
 
-  // Subtle breathing
   const breathe = Math.sin(breathePhase) * 0.012;
   if (avatarModel) {
     avatarModel.position.y = breathe;
   }
 
-  // Very subtle head movement
   if (faceMesh) {
     faceMesh.rotation.x = Math.sin(idleTime * 0.12) * 0.002;
     faceMesh.rotation.y = Math.sin(idleTime * 0.10) * 0.0015;
     faceMesh.rotation.z = Math.sin(idleTime * 0.08) * 0.001;
   }
 
-  // Minimal jaw movement
   const jawTarget = Math.abs(Math.sin(idleTime * 0.5)) * 0.05;
   smoothMorphTarget('jawOpen', jawTarget, 0.05);
 }
@@ -292,7 +277,6 @@ function updateBlinking() {
     nextBlink = Math.random() * 180 + 120;
   }
 
-  // Force eyes neutral
   const dict = faceMesh.morphTargetDictionary;
   for (const key in dict) {
     if (key.startsWith('eyeLook') || key.startsWith('eyeWide') || key.startsWith('eyeSquint')) {
