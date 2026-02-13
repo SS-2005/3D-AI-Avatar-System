@@ -359,6 +359,47 @@ const PHONEME_BASE_DURATION = {
 };
 
 // =====================================================
+// TEXT CLEANING – FIX #1
+// =====================================================
+/**
+ * Removes all characters except letters (a-z, A-Z) and digits (0-9).
+ * Replaces them with a space. This prevents punctuation from breaking
+ * phoneme generation and boundary event alignment.
+ */
+function cleanTextForSpeech(text) {
+  return text.replace(/[^a-zA-Z0-9]/g, ' ');
+}
+
+// =====================================================
+// LIP CONSTRAINT – FIX #2
+// =====================================================
+/**
+ * Strictly prevents the lower lip from rising above the upper lip.
+ * If the jaw is significantly open, any morph that lifts the lower lip
+ * is forced to zero. For moderately open jaws, mouthClose is capped.
+ */
+function enforceLipConstraint() {
+  if (!faceMesh) return;
+  const jaw = getMorphTarget('jawOpen');
+
+  // Jaw substantially open → no lower lip raising allowed
+  if (jaw > 0.1) {
+    setMorphTarget('mouthClose', 0);
+    setMorphTarget('mouthRollLower', 0);
+    setMorphTarget('mouthPress_L', 0);
+    setMorphTarget('mouthPress_R', 0);
+    setMorphTarget('mouthShrugLower', 0);
+  } 
+  // Jaw slightly open – allow only a tiny bit of mouthClose
+  else if (jaw > 0.05) {
+    const currentClose = getMorphTarget('mouthClose');
+    if (currentClose > 0.2) {
+      setMorphTarget('mouthClose', 0.2);
+    }
+  }
+}
+
+// =====================================================
 // TEXT → PHONEME  (fully self-contained, no CDN needed)
 // =====================================================
 // Comprehensive rule-based English grapheme-to-phoneme
@@ -824,6 +865,9 @@ function applyBlendedViseme(shapeKeyA, shapeKeyB, blendFactor, amplitudeScale) {
   Object.entries(targets).forEach(([m, tgt]) => {
     smoothMorph(m, tgt, VISEME_SMOOTHING_IN, VISEME_SMOOTHING_OUT);
   });
+
+  // ========== FIX #2: Strict lip constraint ==========
+  enforceLipConstraint();
 }
 
 // =====================================================
@@ -1254,19 +1298,23 @@ function stopSpeech() {
 // MAIN SPEAK HANDLER
 // =====================================================
 speakBtn.addEventListener('click', () => {
-  const text = textInput.value.trim();
-  if (!text)     { alert('Please enter some text first!'); return; }
+  const rawText = textInput.value.trim();
+  if (!rawText)     { alert('Please enter some text first!'); return; }
   if (!faceMesh) { alert('Avatar is still loading...'); return; }
+
+  // ========== FIX #1: Clean text ==========
+  const cleanedText = cleanTextForSpeech(rawText);
+  if (!cleanedText.trim()) { alert('Text contains no letters or numbers.'); return; }
 
   speechSynthesis.cancel();
   isSpeaking = false;
   resetMouthInstant();
 
   returnHeadToCenter(() => {
-    // Pre-build phoneme events from text (no timing yet)
-    initLipSync(text);
+    // Pre-build phoneme events from CLEANED text
+    initLipSync(cleanedText);
 
-    utterance = new SpeechSynthesisUtterance(text);
+    utterance = new SpeechSynthesisUtterance(cleanedText);
     if (selectedVoice) utterance.voice = selectedVoice;
     utterance.rate  = 1.0;
     utterance.pitch = 1.0;
@@ -1384,4 +1432,4 @@ window.addEventListener('beforeunload', () => {
   speechSynthesis.cancel();
 });
 
-console.log('✓ Production Avatar Engine – Boundary-locked lip sync with full ARKit morphs');
+console.log('✓ Production Avatar Engine – Boundary-locked lip sync with full ARKit morphs (v2)');
