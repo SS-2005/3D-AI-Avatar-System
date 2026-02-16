@@ -847,28 +847,41 @@ function applyBlendedViseme(shapeKeyA, shapeKeyB, blendFactor, amplitudeScale) {
   // Scale by amplitude
   Object.keys(targets).forEach(m => { targets[m] *= amplitudeScale * AMPLITUDE_MULTIPLIER; });
 
-  // ── SAFETY CLAMP ────────────────────────────────────────────────────────────
-  // mouthClose pushes the lower lip UP. When the jaw is open it causes the lower
-  // lip to cross above the upper teeth ("zombie mouth"). Hard-clamp it to 0
-  // whenever jawOpen is more than a tiny crack.
+  // ========== UPDATED SAFETY CLAMP (STRICT) ==========
+  // Prevent lower lip from rising above upper lip by clamping the *combined*
+  // effect of all morphs that raise the lower lip.
   const jawAmt = targets['jawOpen'] || 0;
-  if (jawAmt > 0.08) {
-    targets['mouthClose'] = 0;
+
+  // List of morphs that primarily raise the lower lip (move it upward)
+  const lowerLipRaisers = ['mouthClose', 'mouthRollLower', 'mouthPress_L', 'mouthPress_R', 'mouthShrugLower'];
+
+  // Compute total raise from these morphs
+  let totalRaise = 0;
+  lowerLipRaisers.forEach(m => totalRaise += targets[m] || 0);
+
+  // Maximum allowed raise based on jaw opening.
+  // When jaw is fully closed (0), we allow full raise (1.0).
+  // As jaw opens, allowed raise decreases linearly, reaching 0 at jawOpen = 0.15.
+  const maxRaise = Math.max(0, 1 - (jawAmt / 0.15));
+
+  if (totalRaise > maxRaise && maxRaise >= 0) {
+    // Scale down all raising morphs proportionally so total does not exceed maxRaise
+    const scale = maxRaise / totalRaise;
+    lowerLipRaisers.forEach(m => {
+      if (targets[m]) targets[m] *= scale;
+    });
   }
-  // mouthRollLower also lifts the lower lip – cap it relative to jaw opening
-  if (jawAmt > 0.12) {
-    targets['mouthRollLower'] = Math.min(targets['mouthRollLower'] || 0, 0.15);
-  }
-  // ── END SAFETY CLAMP ────────────────────────────────────────────────────────
+  // ========== END SAFETY CLAMP ==========
 
   // Apply with asymmetric smoothing
   Object.entries(targets).forEach(([m, tgt]) => {
     smoothMorph(m, tgt, VISEME_SMOOTHING_IN, VISEME_SMOOTHING_OUT);
   });
 
-  // ========== FIX #2: Strict lip constraint ==========
+  // Final runtime constraint (already present in your code)
   enforceLipConstraint();
 }
+
 
 // =====================================================
 // BLINKING
