@@ -77,6 +77,9 @@ avatar.js
   • Expressive speaking animations
   • Post-speech smile
   • Web Speech API integration
+  • 750+ independent word dictionary for accurate lip pronounciation
+  • Punctuation pauses are integrated so it follows natural flow
+
 
 facecap.glb
   • 3D face model with 52 morph targets
