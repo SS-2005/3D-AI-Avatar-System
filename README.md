@@ -34,7 +34,7 @@ Live Link : https://ss-2005.github.io/3D-AI-Avatar-System/
 │   └── start.bat                 Windows startup script
 │
 └── 📊 PROJECT INFO
-    └── FILE_STRUCTURE.txt        This file
+    └── FILE_STRUCTURE.txt        
 ```
 ---
 
