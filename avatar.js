@@ -1948,6 +1948,7 @@ function onWordBoundary(charIndex, charLength) {
 }
 
 /**
+ * Author:SS-2005 
  * Rebuild the full phoneme timeline after each new word boundary event.
  * Words with known start times use exact timing.
  * Words after the last known word are estimated forward.
@@ -2362,4 +2363,4 @@ window.addEventListener('beforeunload', () => {
   speechSynthesis.cancel();
 });
 
-console.log('✓ Production Avatar Engine – Boundary-locked lip sync with full ARKit morphs (v7.2 - Stable)');
+console.log('✓ Production-Ready Avatar Engine – Boundary-locked lip sync with full ARKit morphs (v7.2)');
