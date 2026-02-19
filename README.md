@@ -7,7 +7,7 @@ PipeLine with Real time and zero latency for AI Avatar.
 
 ## To Run:
 
-Live Link : https://ss-2005.github.io/3D-AI-Avatar-System/
+Live Link : https://3d-ai-avatar.netlify.app/
 
 1. Run "start.bat"
 2. Open URL in Browswer: http://localhost:8000
