@@ -364,22 +364,40 @@ const PHONEME_BASE_DURATION = {
 // =====================================================
 /**
  * Removes all characters except letters (a-z, A-Z) and digits (0-9).
- * Replaces them with a space. This is used on individual segments.
+ * Apostrophes are removed without adding a space.
+ * Other non-alphanumeric characters are replaced with a space.
  */
+
 function cleanTextForSpeech(text) {
-  return text.replace(/[^a-zA-Z0-9]/g, ' ');
+  // Remove all apostrophe variants (straight ' and curly ’)
+  let cleaned = text.replace(/['’]/g, '');
+  // Then replace any remaining non-alphanumeric characters with a space
+  cleaned = cleaned.replace(/[^a-zA-Z0-9]/g, ' ');
+  // Collapse multiple spaces into one and trim
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  return cleaned;
 }
 
 /**
- * Splits text into segments based on punctuation marks: ! . ? ,
+ * Splits text into segments based on punctuation marks: ! . ? , : ;
  * The punctuation itself is not included in the segments.
  */
 
 function splitOnPunctuation(text) {
   // Split on punctuation followed by optional whitespace
-  const segments = text.split(/(?<=[.!?,])\s*/).filter(s => s.trim().length > 0);
+  // Now includes colon (:) and semicolon (;)
+  const segments = text.split(/(?<=[.!?,;:])\s*/).filter(s => s.trim().length > 0);
   return segments;
 }
+
+/**
+ * Removes all apostrophes (') from the text.
+ * This prevents mispronunciations like "dog s" from "dog's".
+ */
+function removeApostrophes(text) {
+  return text.replace(/'/g, '');
+}
+
 
 // =====================================================
 // LIP CONSTRAINT 
@@ -418,7 +436,6 @@ function enforceLipConstraint() {
 // =====================================================
 // ---------- MAJOR EXPANSION OF WORD EXCEPTIONS ----------
 const WORD_EXCEPTIONS = {
-  // original entries (approximately 200)
   the:'DH AH', a:'AH', an:'AH N', and:'AE N D', or:'AO R',
   is:'IH Z', are:'AA R', was:'W AH Z', were:'W ER',
   be:'B IY', been:'B IH N', being:'B IY IH NG',
@@ -2178,7 +2195,7 @@ speakBtn.addEventListener('click', () => {
   if (!faceMesh) { alert('Avatar is still loading...'); return; }
 
   
-  // Split on punctuation (! . ? ,) and keep segments
+  // Split on punctuation (! . ? , : ;) and keep segments
   const segments = splitOnPunctuation(rawText);
   if (segments.length === 0) { alert('No valid text after cleaning.'); return; }
 
@@ -2242,11 +2259,11 @@ speakBtn.addEventListener('click', () => {
       };
 
       utterance.onend = () => {
-        // Segment finished – schedule next with 1 second pause
+        // Segment finished – schedule next with second pause
         currentSegment++;
         if (currentSegment < segments.length) {
-          // Pause for 1 second before next segment
-          pauseTimeout = setTimeout(speakNextSegment, 200);
+          // Pause for second before next segment
+          pauseTimeout = setTimeout(speakNextSegment, 150);
         } else {
           // Last segment – end speech after a short grace
           setTimeout(() => {
@@ -2345,4 +2362,4 @@ window.addEventListener('beforeunload', () => {
   speechSynthesis.cancel();
 });
 
-console.log('✓ Production Avatar Engine – Boundary-locked lip sync with full ARKit morphs (v3.1)');
+console.log('✓ Production Avatar Engine – Boundary-locked lip sync with full ARKit morphs (v7.2 - Stable)');
